@@ -171,83 +171,64 @@ void ST7735Display::displayReset()
   sendCmd(ST77XX_SLPOUT);     // Sleep out, booster on
   msDelay(500);
 
-  sendCmd(ST77XX_COLMOD),
+  sendCmd(ST77XX_COLMOD);
   sendData({0x05});
   msDelay(10);
 
-  sendCmd(ST7735_FRMCTR1);     // Frame rate control
-  sendData({
-      0x00,   //     fastest refresh
-      0x06,   //     6 lines front porch
-      0x03,   //     3 lines back porch
-  });
-  msDelay(10);
 
-  sendCmd(ST77XX_MADCTL);
-  sendData({0x08});
-  sendCmd(ST7735_DISSET5);
+  sendCmd(0xb1);     // In normal mode (full colors):
   sendData({
-      0x15,  // 1 clk cycle nonoverlap, 2 cycle gate rise, 3 cycle osc equalize
-      0x02   // Fix on VTL
+      0x05,   //   RTNA set 1-line period: RTNA2, RTNA0
+      0x3c,   //   Front porch: FPA5,FPA4,FPA3,FPA2
+      0x3c    //   Back porch: BPA5,BPA4,BPA3,BPA2
   });
-  sendCmd(ST7735_INVCTR); // inversion control
-  sendData({0x00}); // Line inversion
-  sendCmd(ST7735_PWCTR1); // power control
+  sendCmd(0xb2);     // In idle mode (8-colors):
   sendData({
-      0x02, //     GVDD = 4.7V
-      0x70  //     1.0uA
+      0x05,   //   RTNB set 1-line period: RTNAB, RTNB0
+      0x3c,   //   Front porch: FPB5,FPB4,FPB3,FPB2
+      0x3c    //   Back porch: BPB5,BPB4,BPB3,BPB2
   });
-  msDelay(10);
-  sendCmd(ST7735_PWCTR2);
-  sendData({0x05}); //     VGH = 14.7V, VGL = -7.35V
-  sendCmd(ST7735_PWCTR3);
+  sendCmd(0xb3);     // In partial mode + full colors:
   sendData({
-      0x01, //     Opamp current small
-      0x02, //     Boost frequency
+      0x05,   //   RTNC set 1-line period: RTNC2, RTNC0
+      0x3c,   //   Front porch: FPC5,FPC4,FPC3,FPC2
+      0x3c,   //   Back porch: BPC5,BPC4,BPC3,BPC2
+      0x05,   //   RTND set 1-line period: RTND2, RTND0
+      0x3c,   //   Front porch: FPD5,FPD4,FPD3,FPD2
+      0x3c   //   Back porch: BPD5,BPD4,BPD3,BPD2
   });
-  sendCmd(ST7735_VMCTR1);
-  sendData({
-      0x3C, //     VCOMH = 4V
-      0x38  //     VCOML = -1.1V
-  });
-  msDelay(10);
+  sendCmd(0xB4);     // Display dot inversion control:
+  sendData({0x03});    //   NLB,NLC
 
-  sendCmd(ST7735_PWCTR6);
-  sendData({0x11, 0x15});
+  sendCmd(0x3a);     // Interface pixel format
+//ST7735_data(0x03);    // 12-bit/pixel RGB 4-4-4 (4k colors)
+  sendData({0x05});    // 16-bit/pixel RGB 5-6-5 (65k colors)
+//ST7735_data(0x06);    // 18-bit/pixel RGB 6-6-6 (256k colors)
 
-  sendCmd(ST7735_GMCTRP1); // Gamma Adjustments (pos. polarity), 16 args + delay:
-  sendData({
-      0x09, 0x16, 0x09, 0x20,       //     (Not entirely necessary, but provides
-      0x21, 0x1B, 0x13, 0x19,       //      accurate colors)
-      0x17, 0x15, 0x1E, 0x2B,
-      0x04, 0x05, 0x02, 0x0E
-  });
-  sendCmd(ST7735_GMCTRN1); // Gamma Adjustments (neg. polarity), 16 args + delay:
-  sendData({
-      0x0B, 0x14, 0x08, 0x1E,       //     (Not entirely necessary, but provides
-      0x22, 0x1D, 0x18, 0x1E,       //      accurate colors)
-      0x1B, 0x1A, 0x24, 0x2B,
-      0x06, 0x06, 0x02, 0x0F
-  });
-  msDelay(10);
+//ST7735_cmd(0x36);     // Memory data access control:
+                        // MY MX MV ML RGB MH - -
+//ST7735_data(0x00);    // Normal: Top to Bottom; Left to Right; RGB
+//ST7735_data(0x80);    // Y-Mirror: Bottom to top; Left to Right; RGB
+//ST7735_data(0x40);    // X-Mirror: Top to Bottom; Right to Left; RGB
+//ST7735_data(0xc0);    // X-Mirror,Y-Mirror: Bottom to top; Right to left; RGB
+//ST7735_data(0x20);    // X-Y Exchange: X and Y changed positions
+//ST7735_data(0xA0);    // X-Y Exchange,Y-Mirror
+//ST7735_data(0x60);    // X-Y Exchange,X-Mirror
+//ST7735_data(0xE0);    // X-Y Exchange,X-Mirror,Y-Mirror
 
-  sendCmd(ST77XX_CASET);   // 15: Column addr set, 4 args, no delay:
-  sendData({
-    0x00, 0x02,            //     XSTART = 2
-    0x00, 0x81             //     XEND = 129
-  });
+  sendCmd(0x20);     // Display inversion off
+//ST7735_cmd(0x21);     // Display inversion on
 
-  sendCmd(ST77XX_RASET);   // 16: Row addr set, 4 args, no delay:
-  sendData({
-    0x00, 0x02,            //     XSTART = 1
-    0x00, 0x81,            //     XEND = 160
-  });
-  sendCmd(ST77XX_NORON);   // 17: Normal display on, no args, w/delay
-  msDelay(10);
+  sendCmd(0x13);     // Partial mode off
 
-  sendCmd(ST77XX_DISPON); // 18: Main screen turn on, no args, delay
-  msDelay(500);
-//setOrientation(kOrientNormal);
+  sendCmd(0x26);     // Gamma curve set:
+  sendData({0x01});    // Gamma curve 1 (G2.2) or (G1.0)
+//ST7735_data(0x02);    // Gamma curve 2 (G1.8) or (G2.5)
+//ST7735_data(0x04);    // Gamma curve 3 (G2.5) or (G2.2)
+//ST7735_data(0x08);    // Gamma curve 4 (G1.0) or (G1.8)
+
+  sendCmd(0x29);     // Display on
+  setOrientation(kOrientNormal);
 }
 
 void ST7735Display::setOrientation(Orientation orientation)
